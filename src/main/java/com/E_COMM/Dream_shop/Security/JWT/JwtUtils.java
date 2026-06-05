@@ -1,0 +1,70 @@
+package com.E_COMM.Dream_shop.Security.JWT;
+
+import com.E_COMM.Dream_shop.Security.user.ShopUserDetails;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.List;
+
+@Component
+public class JwtUtils {
+
+    @Value("${auth.token.jwtSecret}")
+    private String jwtSecret;
+    @Value("${auth.token.expirationInMils}")
+    private int expirationTime;
+
+    public String generateToken(Authentication authentication) {
+        ShopUserDetails userPrincipal = (ShopUserDetails) authentication.getPrincipal();
+
+        assert userPrincipal != null;
+        List<String> roles = userPrincipal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).toList();
+        return Jwts.builder()
+                .subject(userPrincipal.getEmail())
+                .claim("id",userPrincipal.getId())
+                .claim("roles",roles)
+                .issuedAt(new Date())
+                .expiration(new Date(new Date().getTime() + expirationTime))
+                .signWith(key(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    private SecretKey key(){
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+    }
+
+    public String getUsernameFromToken(String token) {
+        return Jwts.parser()
+                .verifyWith(key())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload().getSubject();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(key())
+                    .build()
+                    .parseSignedClaims(token);
+            System.out.println("JWT Filter Executed");
+            return true;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("JWT Filter Failed"+ e.getMessage());
+            throw  new JwtException(e.getMessage());
+        }
+    }
+
+}
