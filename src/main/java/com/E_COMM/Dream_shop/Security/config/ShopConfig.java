@@ -65,7 +65,7 @@ public class ShopConfig {
 
                 // 4. Configure Endpoint Authorization Rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(apiPrefix + "/**").permitAll() // Public routes
+                        .requestMatchers(apiPrefix + "/auth/**",apiPrefix + "/User/**").permitAll() // Public routes
                         .anyRequest().authenticated() // Secure everything else
                 );
 
