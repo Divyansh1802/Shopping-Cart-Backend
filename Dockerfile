@@ -1,23 +1,19 @@
-# Build stage
-FROM maven:3.9.9-eclipse-temurin-17 AS build
+# ---------- Build Stage ----------
+FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
 COPY pom.xml .
-
-COPY Dream_shop ./Dream_shop
-
-WORKDIR /app/Dream_shop
+COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-# Run stage
-FROM eclipse-temurin:17-jre-alpine
+
+FROM gcr.io/distroless/java17-debian12
 
 WORKDIR /app
 
-# copy jar from build stage
-COPY --from=build /app/Dream_shop/target/*.jar app.jar
+COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
